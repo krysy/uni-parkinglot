@@ -1,25 +1,27 @@
 import Express from "express";
 import bodyParser = require("body-parser");
-import {ParkingLot} from "./parkingLot";
+import {lots, port} from "./config";
+import {ILotSpaceInfo} from "./parkingLot"
+import WebSocket from "ws";
 const cors = require("cors");
 
-interface ILotSpaceInfo {
-    lotName: string;
-    lots: number[];
-}
 
 const app = Express();
+
+const wss = new WebSocket.Server({port: 8081, path: "/ws"}, ()=>{
+    console.log("Websocket server started on port 8081 endpoint /ws")
+});
+
+wss.on("connection", (connection)=>{
+    console.log("New websocket connection!")
+    connection.send(JSON.stringify(getFreeSpaces()));
+});
+
+
 
 app.use(cors());
 app.use(bodyParser());
 app.use(Express.static('public'))
-
-const lots: ParkingLot[] = [];
-
-// Define lots and their API keys here
-lots.push(new ParkingLot("University parking lot", "35801a20-1113-11ea-ac4c-a5718f95e0de"));
-lots.push(new ParkingLot("Weissmann lot",  "35801a20-1113-11ea-ac4c-lolololo"));
-
 
 const getFreeSpaces = (): ILotSpaceInfo[] => {
     const lotInfo: ILotSpaceInfo[] = [];
@@ -40,83 +42,22 @@ app.post("/lots/:apikey", (req, res) => {
         const selectedLot = lots.filter(lot=>lot.getApiKey() == apikey);
         if (selectedLot.length <= 0) {throw("INVALID API KEY")}
         const newLotInfo: number[] = req.body;
-        console.log(newLotInfo);
+        console.log(`${selectedLot[0].getIdentifier()}: ${newLotInfo}`);
         selectedLot[0].setAvailableSpace(newLotInfo);
         res.send("OK")
     } catch (e) {
         res.send(e);
         res.status(400);
     }
-});
 
-app.get("/lots", (req, res) => {
-    res.send(getFreeSpaces());
-});
-
-app.listen(8080);
-
-/*
-app.get("/lots/:identifier", (req, res) => {
-    const identifier = req.params["identifier"];
-
-    if (identifier != null) {
-        let availableSpace: number[] = [];
-        lots.map((lot , index)=> {
-            if (lot.getIdentifier() == identifier){
-                availableSpace = lots[index].getAvailableSpace();
-            }
-        });
-
-        if (availableSpace.length <= 0) {
-            res.status(400);
-            res.send("INVALID IDENTIFIER")
-        } else {
-            res.send(availableSpace)
+    const freeSpace = getFreeSpaces();
+    wss.clients.forEach((client)=> {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(freeSpace));
         }
-    } else {
-        res.send("IDENTIFIER NOT SPECIFIED")
-        res.status(400);
-    }
+    })
 });
 
-app.put("/lots/:identifier", (req, res) => {
-    const identifier = req.params["identifier"];
-
-    if (identifier != null) {
-        const ip = req.ip;
-        const invalidIdentifier: boolean = (lots.map(lot => lot.getIdentifier() == identifier)).includes(true);
-        const invalidUri: boolean = (lots.map(lot => lot.getUri() == ip)).includes(true);
-
-        if (!(invalidIdentifier || invalidUri)) {
-            lots.push(new ParkingLot(identifier, ip));
-            res.send(lots.pop()?.getApiKey());
-        } else {
-            res.status(409);
-            res.send("DUPLICATE ADDRESS OR IDENTIFIER")
-        }
-    } else {
-        res.send("IDENTIFIER NOT SPECIFIED");
-        res.status(400);
-    }
+app.listen(port, ()=> {
+    console.log(`Server started on port ${port}`)
 });
-
-app.delete("/lots/:identifier", (req, res) => {
-    const identifier = req.params["identifier"];
-
-    if (identifier != null) {
-        let deleted: boolean = false;
-        (lots.map((lot, index)=> {
-            if (lot.getIdentifier() === identifier) {
-                lots.splice(index);
-                deleted = true;
-            }
-        }));
-
-        deleted ? res.send(`DELETED [${identifier}] LOT`) : res.send(`[${identifier}] DOES NOT EXIST`);
-    } else {
-        res.send("IDENTIFIER NOT SPECIFIED")
-        res.status(400);
-    }
-});
-*/
-

@@ -59,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
             Log.i("UART", "List of available devices: " + deviceList);
         }
 
+
+        // setup UART
         try {
             mDevice = manager.openUartDevice("USB1-1:1.0");
             mDevice.setBaudrate(115200);
@@ -75,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
             Thread.sleep(1000);
         } catch (Exception ignore){}
 
+        // Create a new thread to evaluate the data read from the serial connection and post it if it changed
         Runnable runnable = new Runnable() {
             String previousValue;
             String newValue;

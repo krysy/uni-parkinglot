@@ -25,19 +25,14 @@ const LotInformation: FC<ILotInformation> = (props) => {
 const EmptyLot: FC<{number: number}> = (props) => (<span className={"lot empty"}>{props.number}</span>);
 const OccupiedLot: FC<{number: number}> = (props) => (<span className={"lot occupied"}>{props.number}</span>);
 
-
 const App: React.FC = () => {
     const [lotSpaceInfo, setLotSpaceInfo] = useState<ILotSpaceInfo[]>();
 
-    const updateLotSpaceInfo = () => {
-        fetch("/lots")
-            .then(res => res.json()
-                .then(json => setLotSpaceInfo(json)))
-    };
-
     useEffect(()=>{
-        updateLotSpaceInfo()
-        setInterval(()=> updateLotSpaceInfo(), 1000);
+        new WebSocket(`ws://${window.location.hostname}:8081/ws`)
+            .onmessage = ((msg)=>{
+            setLotSpaceInfo(JSON.parse(msg.data))
+        });
     }, []);
 
     return (

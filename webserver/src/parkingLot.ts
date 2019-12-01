@@ -1,5 +1,10 @@
 const uuidv1 = require('uuid/v1');
 
+export interface ILotSpaceInfo {
+    lotName: string;
+    lots: number[];
+}
+
 export class ParkingLot {
     private readonly identifier: string;
     private readonly apiKey: string;

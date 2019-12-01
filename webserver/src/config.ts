@@ -1,22 +1,9 @@
-interface IConfig {
-    parkingLots: {
-        identifier: string,
-        uri: string,
-        parkingSpaces: number
-    }[]
-}
+import { ParkingLot } from "./parkingLot";
 
-export const config: IConfig = {
-    parkingLots: [
-        {
-            identifier: "PARKING_LOT_01",
-            uri: "http://foofbarafa.com",
-            parkingSpaces: 4
-        },
-        {
-            identifier: "PARKING_LOT_02",
-            uri: "http://foafaf.com",
-            parkingSpaces: 2
-        }
-    ]
-};
+export const lots: ParkingLot[] = [];
+export const port = 8080;
+
+// Define lots and their API keys here
+lots.push(new ParkingLot("University parking lot", "35801a20-1113-11ea-ac4c-a5718f95e0de"));
+lots.push(new ParkingLot("Weissmann lot",  "35801a20-1113-11ea-ac4c-lolololo"));
+
