@@ -3,7 +3,7 @@
 #include "sonar.h"
 
 
-
+#define OCCUPIED_THRESHOLD 8
 #define GET 'G'
 #define LOT 'L'
 #define EVERY_LOT 'E'
@@ -11,6 +11,13 @@
 
 byte commandBuffer[COMMAND_BUFFER_SIZE];
 
+int isSpaceOccupied(int value){
+    if (value <= OCCUPIED_THRESHOLD){
+        return 1;
+    }
+    
+    return 0;
+}
 
 void processCommands() {
     switch (commandBuffer[0]) {
@@ -26,7 +33,14 @@ void processCommands() {
                 }
                 
                 break;
-            
+
+            case EVERY_LOT: 
+                Serial.print('[');
+                Serial.print(isSpaceOccupied(distances_cm[0]));
+                Serial.print(',');
+                Serial.print(isSpaceOccupied(distances_cm[1]));
+                Serial.println(']');
+                break;            
             default:
                 Serial.println("INVALID_COMMAND");
                 break;

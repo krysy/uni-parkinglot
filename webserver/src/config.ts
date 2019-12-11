@@ -7,3 +7,4 @@ export const port = 8080;
 lots.push(new ParkingLot("University parking lot", "35801a20-1113-11ea-ac4c-a5718f95e0de"));
 lots.push(new ParkingLot("Weissmann lot",  "35801a20-1113-11ea-ac4c-lolololo"));
 
+export const MONGO_ENABLED = false;

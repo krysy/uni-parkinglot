@@ -1,8 +1,12 @@
 import Express from "express";
 import bodyParser = require("body-parser");
-import {lots, port} from "./config";
+import {lots, MONGO_ENABLED, port} from "./config";
 import {ILotSpaceInfo} from "./parkingLot"
 import WebSocket from "ws";
+import {MongoController} from "./mongoController";
+import {mongoController} from "./global";
+import {evaluateParkingData} from "./eval";
+import {generateParkingData} from "./generator";
 const cors = require("cors");
 
 
@@ -17,12 +21,9 @@ wss.on("connection", (connection)=>{
     connection.send(JSON.stringify(getFreeSpaces()));
 });
 
-
-
 app.use(cors());
 app.use(bodyParser());
 app.use(Express.static('public'))
-
 const getFreeSpaces = (): ILotSpaceInfo[] => {
     const lotInfo: ILotSpaceInfo[] = [];
     lots.map(lot => {
@@ -34,6 +35,25 @@ const getFreeSpaces = (): ILotSpaceInfo[] => {
 
     return lotInfo
 };
+
+if (MONGO_ENABLED) {
+    mongoController.connectMongo();
+
+    app.get("/parking", async (req, res) => {
+        res.send(await mongoController.getProcessedParkingData());
+    });
+
+    app.get("/parking/evaluate", async (req, res) => {
+        await evaluateParkingData();
+        res.send("OK");
+    });
+}
+
+app.get("/parking/generate", async (req, res) => {
+    await generateParkingData();
+    res.send("OK");
+});
+
 
 app.post("/lots/:apikey", (req, res) => {
     const apikey = req.params["apikey"];

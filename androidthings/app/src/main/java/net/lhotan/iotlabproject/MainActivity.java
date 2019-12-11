@@ -39,11 +39,12 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
     UartDevice mDevice;
     OkHttpClient client = new OkHttpClient();
-    String currentCommand;
-    volatile String value0;
-    volatile String value1;
+    String previousValue;
+    volatile String newValue;
+    public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     String serverUrl = "http://lhotan.net:8080/lots/35801a20-1113-11ea-ac4c-a5718f95e0de";
+    byte[] command = new byte[]{'G', 'E','D'};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,8 +60,6 @@ public class MainActivity extends AppCompatActivity {
             Log.i("UART", "List of available devices: " + deviceList);
         }
 
-
-        // setup UART
         try {
             mDevice = manager.openUartDevice("USB1-1:1.0");
             mDevice.setBaudrate(115200);
@@ -77,13 +76,11 @@ public class MainActivity extends AppCompatActivity {
             Thread.sleep(1000);
         } catch (Exception ignore){}
 
-        // Create a new thread to evaluate the data read from the serial connection and post it if it changed
         Runnable runnable = new Runnable() {
-            String previousValue;
-            String newValue;
+
 
             private int isOccupied(Integer lotDistance) {
-                if (lotDistance >= 8) {
+                if (lotDistance >= 32) {
                     return 0;
                 }
                 return 1;
@@ -92,14 +89,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 while(true) {
+
                     try {
-                        newValue = "["+isOccupied(Integer.valueOf(value0))+","+isOccupied(Integer.valueOf(value1))+"]";
                         if (!newValue.equals(previousValue)) {
                             Log.i("UART", newValue);
                             previousValue = newValue;
                             Log.i("URL", post(serverUrl, newValue));
                         }
-                        Thread.sleep(250);
+                        Thread.sleep(50);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -110,14 +107,10 @@ public class MainActivity extends AppCompatActivity {
         Thread thread = new Thread(runnable);
         thread.start();
 
-        byte[] commandBuffer = new byte[]{'G', 'L', '0', 'D'};
         try {
-            mDevice.write(commandBuffer, commandBuffer.length);
+            mDevice.write(command, command.length);
         } catch (Exception ignore){};
-        currentCommand = "GL0D";
     }
-
-    public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
 
     String post(String url, String json) throws IOException {
@@ -134,26 +127,16 @@ public class MainActivity extends AppCompatActivity {
 
     public void readUartBuffer(UartDevice uart) throws IOException {
         // Maximum amount of data to read at one time
-        final int maxCount = 32;
+        final int maxCount = 8;
         byte[] buffer = new byte[maxCount];
 
         while ((uart.read(buffer, buffer.length)) > 0) {
-            String result = new String(buffer, StandardCharsets.UTF_8).replaceAll("[^a-zA-Z0-9]","");
+            String result = new String(buffer, StandardCharsets.UTF_8).replaceAll("[^\\x20-\\x7E]","");
             if (!result.equals("INVALID_COMMAND")) {
-                try {
-                    if (currentCommand.equals("GL0D")) {
-                        byte[] commandBuffer = new byte[]{'G', 'L', '1', 'D'};
-                        Thread.sleep(100);
-                        mDevice.write(commandBuffer, commandBuffer.length);
-                        value0 = result;
-                        currentCommand = "GL1D";
-                    } else {
-                        byte[] commandBuffer = new byte[]{'G', 'L', '0', 'D'};
-                        Thread.sleep(100);
-                        mDevice.write(commandBuffer, commandBuffer.length);
-                        value1 = result;
-                        currentCommand = "GL0D";
-                    }
+                try{
+                    newValue = result;
+                    Thread.sleep(10);
+                    mDevice.write(command, command.length);
                 } catch (Exception ignore){}
             }
         }
