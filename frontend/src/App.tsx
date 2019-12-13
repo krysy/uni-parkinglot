@@ -39,14 +39,14 @@ const LotInformation: FC<ILotInformation> = (props) => {
                     {
 
                         lots.map((lot, index)=>{
-                            const percentages = occupancyInfo.filter((e: any)=>e.lotNumber === index).pop()?.percentages;
                             const data: any[] = [];
-                            // eslint-disable-next-line no-unused-expressions
-                            percentages?.map((d: any, index: number)=>data.push({name: numberToDay(index), uv: d}));
-
-                            if (data.length >= 0) {
+                            console.log(occupancyInfo)
+                            if (occupancyInfo.length <= 0) {
                                 return <span></span>
                             } else {
+                                // eslint-disable-next-line no-unused-expressions
+                                const percentages = occupancyInfo.filter((e: any)=>e.lotNumber === index).pop().percentages;
+                                percentages.map((d: any, index: number)=>data.push({name: numberToDay(index), uv: d}));
                                 return (
                                     <span>
                                         Occupancy percentage lot {index}
@@ -78,7 +78,7 @@ const App: React.FC = () => {
     useEffect(()=>{
         new WebSocket(`ws://${window.location.hostname}:8081/ws`)
             .onmessage = ((msg)=>{setLotSpaceInfo(JSON.parse(msg.data))});
-        fetch("/parking").then(async (res)=>{
+        fetch("http://localhost:8080/parking").then(async (res)=>{
           const data = await res.json();
           setParkData(data);
         })
